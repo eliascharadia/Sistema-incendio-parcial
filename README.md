@@ -63,3 +63,6 @@ int leer_control(){
   return valor;// Se retorno el valor al llamado de esta funcion para manipularlo.
 }
 ~~~
+
+## :octocat: Link al proyecto
+- [proyecto](https://www.tinkercad.com/things/2hc4EQ8or8j-2do-parcial-1b-elias-charadia/editel?sharecode=tz5tiXZC_ijjYl3a7FwzIRzA8Sweb0hnFXltIoTnDr0)

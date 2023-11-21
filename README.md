@@ -21,3 +21,22 @@ Este proyecto simula un posible alarma contra incendio, utilizando diferentes co
   
 El funcionamiento es muy sencillo, cuando el sensor de temperatura detecte temperaturas entre -1 grados y 32 grados, se va a indicar en el display la temperatura actual y la estacion
 del año. Cuando detecte una temperatura mayor a 60 grados se activa el sistema de alarma de incendio utilizando todos los componentes anteriormente descritos.
+
+## Función principal
+
+~~~ C (lenguaje en el que esta escrito)
+void loop() {
+  
+  
+  encender_apagar_lcd();
+  
+  // INFO EN LCD //
+  mostrar_temperatura();
+  mostrar_estaciones();
+  
+  // ALERTAS //
+  alertar_mensaje_incendio();
+  alertar_incendio_leds();
+  activar_servo();
+}
+~~~

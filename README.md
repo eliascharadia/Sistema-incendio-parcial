@@ -40,3 +40,22 @@ void loop() {
   activar_servo();
 }
 ~~~
+
+## Función principar - control remoto
+
+~~~ C (lenguaje en el que esta escrito)
+int leer_control(){
+  /*
+    Con esta funcion se lee lo que el receptor infrarojo
+    recibe como valor y lo devuelve para utilizarlo 
+    de cualquier manera.
+  */
+  if (IrReceiver.decode()) {
+   	valor = (IrReceiver.decodedIRData.decodedRawData);  // Guarda el código correspondiente al boton presionado.
+    Serial.println(valor);// Muestra el valor del codigo en el puerto serie.
+    delay(50);
+    IrReceiver.resume();  // Reinicia el receptor IR para recibir el siguiente código.
+  }
+  return valor;// Se retorno el valor al llamado de esta funcion para manipularlo.
+}
+~~~

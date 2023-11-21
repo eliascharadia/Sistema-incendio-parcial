@@ -1,0 +1,254 @@
+#include <LiquidCrystal.h>
+#include <IRremote.hpp>
+#include <Servo.h>
+
+LiquidCrystal lcd(2,3,4,5,6,7);// Configuracion de los pines del LCD
+#define SENSOR_TEMPERATURA A0
+#define ROJO1 9
+#define ROJO2 8
+#define SERVO 10
+
+int IR_RECEIVE_PIN = 11;  // Pin al que está conectado el receptor IR
+int temperatura;
+int grados = 0;
+bool control_encendido = false;
+bool btn_pause = false;
+unsigned long valor;
+Servo ServoIncendio;
+
+void setup() {
+  
+  lcd.begin(16,2);
+  Serial.begin(9600);
+  IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK);  // Inicia el receptor IR
+  pinMode(ROJO1, OUTPUT);
+  pinMode(ROJO2, OUTPUT);
+  ServoIncendio.attach(SERVO);
+  
+}
+
+void loop() {
+  
+  
+  encender_apagar_lcd();
+  
+  // INFO EN LCD //
+  mostrar_temperatura();
+  mostrar_estaciones();
+  
+  // ALERTAS //
+  alertar_mensaje_incendio();
+  alertar_incendio_leds();
+  activar_servo();
+}
+
+
+
+
+/////////// Configuracion del control ///////////////
+int leer_control(){
+  /*
+    Con esta funcion se lee lo que el receptor infrarojo
+    recibe como valor y lo devuelve para utilizarlo 
+    de cualquier manera.
+  */
+  if (IrReceiver.decode()) {
+   	valor = (IrReceiver.decodedIRData.decodedRawData);  // Muestra el código en hexadecimal
+    Serial.println(valor);
+    delay(50);
+    IrReceiver.resume();  // Reinicia el receptor IR para recibir el siguiente código
+  }
+  return valor;
+}
+
+bool boton_on_off_control(){
+  /*
+  Con el valor que se recibe al apretar el boton rojo, 
+  hago un boton on/off, utilizando banderas para saber si ya 
+  se presiono aneteriormente y en que estado esta.
+  */
+  leer_control();
+  if (valor == 4278238976){// Codigo del btn rojo del control
+    if (control_encendido == false){
+     control_encendido = true;
+     valor = 0;
+     delay(80);
+    }else{
+      control_encendido = false;
+      valor = 0;
+      delay(80);
+    }
+  }
+  return control_encendido;
+}
+
+void encender_apagar_lcd()
+{
+ /*
+ Esta funcion sirve para apagar o prender el lcd,
+ utilizando una bandera del boton on/off y los metodos 
+ propios de la libreria del lcd.
+ */
+  boton_on_off_control();
+  
+  if (control_encendido == true){
+    lcd.display();// Activa la pantalla
+  }else{
+    lcd.noDisplay();// Apaga la pantalla
+  } 
+}
+
+void pausar_sistema()
+{
+  /*
+  Esta funcion solo sirve para cambiar de estado un bandera
+  con el boton de pause del control. Su funcion es llamarla
+  cada vez que se quiera pausar un sistema especifico trabajando
+  con su bandera. En este proyecto lo utilizo para pausar la 
+  señal visual de los leds y el servomotor.
+  */
+  leer_control();
+  if (valor == 4194680576){
+    if (btn_pause == false){
+      btn_pause = true;
+      valor = 0;
+      delay(80);
+    }else{
+      btn_pause = false;
+      valor = 0;
+      delay(80);
+    }
+  }
+}
+
+
+
+//////////////// SENSOR DE TEMPERATURA /////////////////////
+void conversion_valores_grados()
+{
+  //Leo el sensor y convierto el valor analogico a centigrados
+  //con la funcion map.
+	temperatura = analogRead(SENSOR_TEMPERATURA);
+  	temperatura = map(temperatura, 20,358,-40,125);
+}
+
+void mostrar_estaciones()
+{
+  /*
+  Llamo a la funcion para calcular los grados y establezco}
+  un rango de temperatura por cada estacion del año.
+  Mostrando asi la estacion del año a la que corresponde
+  en el lcd 16x2
+  */
+  conversion_valores_grados();
+  if (temperatura >= 25 and temperatura <= 32){
+    lcd.setCursor(1,0);// Indico al cursor donde posicionarse
+  	lcd.print("***VERANO***");// Printeo un mensaje con el nombre de la estacion
+  }
+  
+  if (temperatura > 15 and temperatura < 25){
+    lcd.setCursor(1,0);
+  	lcd.print("***PRIMAVERA***");
+  }
+  
+  if (temperatura >= 11 and temperatura <= 15){
+    lcd.setCursor(1,0);
+  	lcd.print("***OTOÑO***");
+  }
+  
+  if (temperatura >= -1 and temperatura < 11){
+    lcd.setCursor(1,0);
+  	lcd.print("***INVIERNO***");
+  }
+  if (temperatura < -10 or (temperatura < 60 and temperatura > 32)){
+    lcd.setCursor(1,0);
+  	lcd.print("   *********    ");
+  }
+  
+}
+
+void mostrar_temperatura()
+{
+  /*
+  Muestra la temperatura actual en el lcd en la fila 1
+  */
+  //lcd.setCursor(0,1);
+  //lcd.print("                ");
+  conversion_valores_grados();
+  lcd.setCursor(0,1);// Ubico el cursor en la fila 1 columna 0
+  lcd.print("Temp: ");
+  lcd.print(temperatura);
+  lcd.print(" C");
+  //Serial.println(temperatura);
+   
+}
+
+void alertar_mensaje_incendio()
+{
+  /*
+  Establezco un umbral de temperatura para identifcar un inendio
+  si la temperatura actual lo supera, muestra un mensaje de alerta
+  oscilando.
+  */
+  conversion_valores_grados();
+  if (temperatura > 60){
+    lcd.setCursor(0,0);
+  	lcd.print("                ");
+    delay(200);
+    lcd.setCursor(3,0);
+    lcd.print("INCENDIO");
+    delay(200);
+  }
+}
+
+void alertar_incendio_leds()
+{
+  /*
+  Si la temperatura rompe la umbral de 60 grados 
+  activo una alarma visual para notificar de un posible
+  incenidio.
+  */
+  pausar_sistema();
+  conversion_valores_grados();
+  if (temperatura > 60){
+    if (btn_pause == false){// Pregunto si se apreto el boton de 
+      // pausa.
+      digitalWrite(ROJO1, HIGH);
+      digitalWrite(ROJO2, LOW);
+      delay(200);
+      digitalWrite(ROJO1, LOW);
+      digitalWrite(ROJO2, HIGH);
+      delay(200);
+    }else{
+      digitalWrite(ROJO1, LOW);
+      digitalWrite(ROJO2, LOW);
+    }
+  }
+}
+
+
+void activar_servo()
+{
+  /*
+  Esta funcion se encarga de controlar el servo. Cuando el sensor
+  de temperatura detecte que hay un incendio, el servo motor
+  empieza a oscilar entre unos 45 y 135 grados aprox.
+  Si se quiere tambien se puede pausar con el btn_pause.
+  */
+   pausar_sistema();
+   conversion_valores_grados();
+   if (temperatura > 60){ 
+     if (btn_pause == false){
+      ServoIncendio.write(45);// Servo a 45 grados
+      delay(500);
+      ServoIncendio.write(135);// servo a 135 grados
+      delay(500);
+    }else{
+      ServoIncendio.write(0);
+    } 
+   }else{
+      ServoIncendio.write(0);// Cuando arranca el programa
+     // Coloco al servo en 0 grados.
+    } 
+  
+}

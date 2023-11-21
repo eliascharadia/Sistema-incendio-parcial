@@ -18,5 +18,6 @@ Este proyecto simula un posible alarma contra incendio, utilizando diferentes co
   Cuando haya un posible incendio el servo motor simulara el movimiento de por ejemplo un aspersor, desplazandose en un determinado rango de angulo.
 - LEDs:
   Al igual que el servo motor se activan al momento de un incendio haciendo una señal visual alternando el encendido y apagado.
+  
 El funcionamiento es muy sencillo, cuando el sensor de temperatura detecte temperaturas entre -1 grados y 32 grados, se va a indicar en el display la temperatura actual y la estacion
 del año. Cuando detecte una temperatura mayor a 60 grados se activa el sistema de alarma de incendio utilizando todos los componentes anteriormente descritos.
